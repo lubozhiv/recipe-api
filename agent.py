@@ -1,10 +1,9 @@
 import os
 import dotenv
-from typing import Dict, List
+from typing import Dict
 from github import Github
 from llama_index.llms.openai import OpenAI
 from llama_index.core.tools import FunctionTool
-from llama_index.core.agent import ReActAgent
 from llama_index.core.agent.workflow import AgentWorkflow, FunctionAgent
 from llama_index.core.workflow import Context
 import asyncio

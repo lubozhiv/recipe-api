@@ -28,4 +28,4 @@ jobs:
         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         OPENAI_BASE_URL: ${{ secrets.OPENAI_BASE_URL }}  # optional
         OPENAI_MODEL: ${{ secrets.OPENAI_MODEL }}
-      run: python test_llamaindex_openai.py
+      run: python test_openai.py

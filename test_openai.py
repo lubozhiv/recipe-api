@@ -7,7 +7,7 @@ client = OpenAI(
     model=os.getenv("OPENAI_MODEL")
 )
 
-response = client.client.complete(
+response = client.complete(
     prompt="What is the capital of France?"
 )
 

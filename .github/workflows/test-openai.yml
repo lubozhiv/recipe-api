@@ -1,4 +1,4 @@
-name: Test OpenAI with LlamaIndex
+name: Test OpenAI
 
 on:
   push:

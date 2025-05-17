@@ -45,7 +45,7 @@ jobs:
       - name: Run pytest with coverage
         continue-on-error: true
         env:
-          DJANGO_SETTINGS_MODULE: recipes-api.settings  # Match your settings module
+          DJANGO_SETTINGS_MODULE: recipes.settings  # Match your settings module
         run: |
           poetry run pytest --cov=. --cov-report=xml:coverage.xml --junit-xml=pytest.xml
 

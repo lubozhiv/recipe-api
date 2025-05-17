@@ -22,7 +22,7 @@ jobs:
       - name: Install Poetry
         run:
           pip install poetry
-
+      
       - name: Install dependencies
         run: |
           poetry install --no-root
@@ -46,6 +46,17 @@ jobs:
           junit-path:
             pytest.xml
           show-diffcover: 'true'
+
+      - name: Install GitHub CLI (gh)
+        run: |
+          type -p gh >/dev/null || sudo apt-get install gh -y
+          gh auth login --with-token <<< "${{ secrets.GITHUB_TOKEN }}"
+
+      - name: Get latest PR number
+        id: get-pr-number
+        run: |
+          PR_NUMBER=$(gh pr list --limit 1 --json number --jq '.[0].number')
+          echo "PR_NUMBER=$PR_NUMBER" >> $GITHUB_ENV
 
       - name: Review agent
         env:

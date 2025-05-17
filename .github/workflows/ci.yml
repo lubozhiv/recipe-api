@@ -23,11 +23,11 @@ jobs:
         run: pip install poetry
 
       - name: Cache Poetry virtualenv
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         id: cache-poetry
         with:
-          path: ~/.cache/pypoetry/virtualenvs
-          key: poetry-${{ hashFiles('**/poetry.lock') }}
+          path: .venv
+          key: ${{ runner.os }}-poetry-${{ hashFiles('**/poetry.lock') }}
 
       - name: Install dependencies
         run: |

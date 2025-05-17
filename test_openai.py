@@ -7,7 +7,7 @@ client = OpenAI(
 )
 
 response = client.chat.completions.create(
-    model=os.getenv(OPENAI_MODEL),
+    model="gpt-4o-mini",
     messages=[
         {"role": "system", "content": "You are a helpful assistant."},
         {"role": "user", "content": "What is the capital of France?"}

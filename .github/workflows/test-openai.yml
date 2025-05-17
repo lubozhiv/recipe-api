@@ -1,4 +1,4 @@
-name: Test OpenAI
+name: Test OpenAI with LlamaIndex
 
 on:
   push:
@@ -6,11 +6,12 @@ on:
   pull_request:
 
 jobs:
-  openai-test:
+  llamaindex-openai-test:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
 
     - name: Set up Python
       uses: actions/setup-python@v5
@@ -19,13 +20,12 @@ jobs:
 
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install openai
+        pip install --upgrade pip
+        pip install llama-index openai
 
-    - name: Run OpenAI test
+    - name: Run test script
       env:
         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         OPENAI_BASE_URL: ${{ secrets.OPENAI_BASE_URL }}  # optional
         OPENAI_MODEL: ${{ secrets.OPENAI_MODEL }}
-      run: |
-        python test_openai.py
+      run: python test_llamaindex_openai.py

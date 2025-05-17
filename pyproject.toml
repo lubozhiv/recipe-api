@@ -6,6 +6,7 @@ authors = ["Your Name <you@example.com>"]
 
 [tool.poetry.dependencies]
 python = "^3.10"
+django = "^4.2"  # Add this line
 llama-index-core = "^0.12.36"
 llama-index-llms-openai = "^0.3.40"
 pygithub = "^2.6.1"

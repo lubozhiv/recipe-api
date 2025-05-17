@@ -22,11 +22,25 @@ jobs:
       - name: Install Poetry
         run: pip install poetry
 
+      - name: Cache Poetry virtualenv
+        uses: actions/cache@v3
+        id: cache-poetry
+        with:
+          path: ~/.cache/pypoetry/virtualenvs
+          key: poetry-${{ hashFiles('**/poetry.lock') }}
+
       - name: Install dependencies
-        run: poetry install  --no-root --sync
+        run: |
+          poetry install --no-root
+          poetry show  # Verify Django is installed
 
       - name: Run migrations
         run: poetry run python manage.py migrate --noinput
+
+      - name: List installed packages
+        run: poetry run pip list
+
+      # ... rest of your workflow ...
 
       - name: Run pytest with coverage
         continue-on-error: true

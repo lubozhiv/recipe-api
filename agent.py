@@ -259,17 +259,19 @@ async def main():
     ctx = Context(workflow_agent)
 
     while True:
-        query = input("> ").strip()
-        if query.lower() in ('exit', 'quit'):
-            break
-
-        if not query:
-            print("Please enter a valid query.")
-            continue
-
-        if not any(word in query.lower() for word in ["pr", "pull request", "review"]):
-            print("Please specify that you want to review a PR (e.g., 'Review PR #42')")
-            continue
+        pr_number = os.environ["PR_NUMBER"]
+        query = "Write a review for PR: " + pr_number
+        # query = input("> ").strip()
+        # if query.lower() in ('exit', 'quit'):
+        #     break
+        #
+        # if not query:
+        #     print("Please enter a valid query.")
+        #     continue
+        #
+        # if not any(word in query.lower() for word in ["pr", "pull request", "review"]):
+        #     print("Please specify that you want to review a PR (e.g., 'Review PR #42')")
+        #     continue
 
         print("\nStarting workflow...\n")
 

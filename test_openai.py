@@ -3,7 +3,7 @@ from openai import OpenAI
 
 client = OpenAI(
     api_key=os.getenv("OPENAI_API_KEY"),
-    api_base=os.getenv("OPENAI_BASE_URL"),
+    base_url=os.getenv("OPENAI_BASE_URL"),
 )
 
 response = client.chat.completions.create(

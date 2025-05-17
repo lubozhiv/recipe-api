@@ -7,11 +7,8 @@ client = OpenAI(
     model=os.getenv("OPENAI_MODEL")
 )
 
-response = client.chat.completions.create(
-    messages=[
-        {"role": "system", "content": "You are a helpful assistant."},
-        {"role": "user", "content": "What is the capital of France?"}
-    ]
+response = client.client.complete(
+    prompt="What is the capital of France?"
 )
 
-print(response.choices[0].message.content)
+print(response.text)

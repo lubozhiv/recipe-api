@@ -41,7 +41,6 @@ if git is not None:
 else:
     repo = None
 
-
 # State management tools
 async def add_context_to_state(ctx: Context, context: str) -> Dict:
     state = await ctx.get("state")
@@ -49,13 +48,11 @@ async def add_context_to_state(ctx: Context, context: str) -> Dict:
     await ctx.set("state", state)
     return {"success": True, "message": "Context added to state"}
 
-
 add_context_to_state_tool = FunctionTool.from_defaults(
     fn=add_context_to_state,
     name="add_context_to_state",
     description="Adds the gathered context to the workflow state."
 )
-
 
 async def add_comment_to_state(ctx: Context, draft_comment: str) -> Dict:
     state = await ctx.get("state")
@@ -63,13 +60,11 @@ async def add_comment_to_state(ctx: Context, draft_comment: str) -> Dict:
     await ctx.set("state", state)
     return {"success": True, "message": "Draft comment added to state"}
 
-
 add_comment_to_state_tool = FunctionTool.from_defaults(
     fn=add_comment_to_state,
     name="add_comment_to_state",
     description="Adds the draft PR comment to the workflow state."
 )
-
 
 # GitHub interaction tools
 async def get_pr_details(pr_number: int) -> Dict:
@@ -97,13 +92,11 @@ async def get_pr_details(pr_number: int) -> Dict:
     except Exception as e:
         return {"error": str(e)}
 
-
 pr_details_tool = FunctionTool.from_defaults(
     fn=get_pr_details,
     name="get_pr_details",
     description="Fetches details about a pull request."
 )
-
 
 async def get_file_contents(file_path: str) -> Dict:
     if not git or not repo:
@@ -122,13 +115,11 @@ async def get_file_contents(file_path: str) -> Dict:
     except Exception as e:
         return {"error": str(e)}
 
-
 file_contents_tool = FunctionTool.from_defaults(
     fn=get_file_contents,
     name="get_file_contents",
     description="Fetches the contents of a file from the repository."
 )
-
 
 async def get_commit_details(commit_sha: str) -> Dict:
     if not git or not repo:
@@ -159,13 +150,11 @@ async def get_commit_details(commit_sha: str) -> Dict:
     except Exception as e:
         return {"error": str(e)}
 
-
 commit_details_tool = FunctionTool.from_defaults(
     fn=get_commit_details,
     name="get_commit_details",
     description="Fetches details about a commit including changed files."
 )
-
 
 async def add_final_review_to_state(ctx: Context, final_review: str) -> Dict:
     state = await ctx.get("state")
@@ -173,13 +162,11 @@ async def add_final_review_to_state(ctx: Context, final_review: str) -> Dict:
     await ctx.set("state", state)
     return {"success": True, "message": "Final review added to state"}
 
-
 add_final_review_to_state_tool = FunctionTool.from_defaults(
     fn=add_final_review_to_state,
     name="add_final_review_to_state",
     description="Adds the final approved review comment to the workflow state."
 )
-
 
 async def post_review_to_github(pr_number: int, body: str) -> Dict:
     if not git or not repo:
@@ -196,7 +183,6 @@ async def post_review_to_github(pr_number: int, body: str) -> Dict:
         }
     except Exception as e:
         return {"error": str(e)}
-
 
 post_review_tool = FunctionTool.from_defaults(
     fn=post_review_to_github,
@@ -267,68 +253,73 @@ workflow_agent = AgentWorkflow(
     },
 )
 
-
 async def main():
     print("\nGitHub PR Review Agent Workflow")
     print("-------------------------------")
-
-    # Get PR number from environment variable
-    pr_number = os.getenv("PR_NUMBER")
-    if not pr_number:
-        print("Error: PR_NUMBER environment variable not set")
-        return
-
-    print(f"Starting review for PR #{pr_number}...\n")
+    print("Enter a PR number and request (e.g., 'Review PR #42') or 'exit' to quit:")
 
     ctx = Context(workflow_agent)
-    query = f"Write a review for PR #{pr_number}"
 
-    print("\nStarting workflow...\n")
+    while True:
+        query = input("> ").strip()
+        if query.lower() in ('exit', 'quit'):
+            break
 
-    # Verify PR exists
-    if repo:
-        try:
-            pull_request = repo.get_pull(int(pr_number))
-            pr_body = pull_request.body if pull_request.body else ""
-            print(f"PR found: {{'title': '{pull_request.title}', 'body': '{pr_body}'}}")
-        except Exception as e:
-            print(f"Error fetching PR #{pr_number}: {e}")
-            return
+        if not query:
+            print("Please enter a valid query.")
+            continue
 
-    prompt = RichPromptTemplate(query)
-    handler = workflow_agent.run(prompt.format(), ctx=ctx)
+        if not any(word in query.lower() for word in ["pr", "pull request", "review"]):
+            print("Please specify that you want to review a PR (e.g., 'Review PR #42')")
+            continue
 
-    current_agent = None
-    async for event in handler.stream_events():
-        if hasattr(event, "current_agent_name") and event.current_agent_name != current_agent:
-            current_agent = event.current_agent_name
-            print(f"\nCurrent agent: {current_agent}")
-            print(
-                f"Output from tool: Agent {current_agent} is now handling the request due to the following reason: {'Initial request' if current_agent == 'ReviewAndPostingAgent' else 'Requested information'}")
+        print("\nStarting workflow...\n")
 
-        elif isinstance(event, AgentOutput):
-            if event.response and event.response.content:
-                print(f"\nFinal response: {event.response.content}")
-            if event.tool_calls:
-                print(f"Selected tools: {[call.tool_name for call in event.tool_calls]}")
-                for call in event.tool_calls:
-                    print(f"Calling selected tool: {call.tool_name}, with arguments: {call.tool_kwargs}")
-                    if call.tool_name == "handoff":
-                        print(
-                            f"Output from tool: Agent {call.tool_kwargs.get('to_agent')} is now handling the request due to the following reason: {call.tool_kwargs.get('reason', 'Workflow progression')}")
+        # Extract PR number
+        import re
+        pr_match = re.search(r'#?(\d+)', query)
+        if pr_match:
+            pr_number = int(pr_match.group(1))
+            if repo:
+                try:
+                    pull_request = repo.get_pull(pr_number)
+                    pr_body = pull_request.body if pull_request.body else ""
+                    print(f"Output from tool: {{'title': '{pull_request.title}', 'body': '{pr_body}'}}")
+                except Exception as e:
+                    print(f"Error fetching PR directly: {e}")
 
-        elif isinstance(event, ToolCallResult):
-            print(f"Output from tool: {event.tool_output}")
-            if isinstance(event.tool_output, dict) and 'title' in event.tool_output:
-                print(
-                    f"Output from tool: {{'title': '{event.tool_output['title']}', 'body': '{event.tool_output.get('body', '')}'}}")
+        prompt = RichPromptTemplate(f"Write a review for PR #1")
+        handler = workflow_agent.run(prompt.format(), ctx=ctx)
 
-        elif isinstance(event, ToolCall):
-            print(f"Calling selected tool: {event.tool_name}, with arguments: {event.tool_kwargs}")
+        current_agent = None
+        async for event in handler.stream_events():
+            if hasattr(event, "current_agent_name") and event.current_agent_name != current_agent:
+                current_agent = event.current_agent_name
+                print(f"\nCurrent agent: {current_agent}")
+                # Explicit handoff logging
+                print(f"Output from tool: Agent {current_agent} is now handling the request due to the following reason: {'Initial request' if current_agent == 'ReviewAndPostingAgent' else 'Requested information'}")
 
-    state = await ctx.get("state")
-    print("\nWorkflow completed. Final state:", state)
+            elif isinstance(event, AgentOutput):
+                if event.response and event.response.content:
+                    print(f"\nFinal response: {event.response.content}")
+                if event.tool_calls:
+                    print(f"Selected tools: {[call.tool_name for call in event.tool_calls]}")
+                    for call in event.tool_calls:
+                        print(f"Calling selected tool: {call.tool_name}, with arguments: {call.tool_kwargs}")
+                        if call.tool_name == "handoff":
+                            print(f"Output from tool: Agent {call.tool_kwargs.get('to_agent')} is now handling the request due to the following reason: {call.tool_kwargs.get('reason', 'Workflow progression')}")
 
+            elif isinstance(event, ToolCallResult):
+                print(f"Output from tool: {event.tool_output}")
+                if isinstance(event.tool_output, dict) and 'title' in event.tool_output:
+                    print(f"Output from tool: {{'title': '{event.tool_output['title']}', 'body': '{event.tool_output.get('body', '')}'}}")
+
+            elif isinstance(event, ToolCall):
+                print(f"Calling selected tool: {event.tool_name}, with arguments: {event.tool_kwargs}")
+
+        state = await ctx.get("state")
+        print("\nCurrent workflow state:", state)
+        print("\nWorkflow completed. Enter another request or 'exit' to quit.")
 
 if __name__ == "__main__":
     try:

@@ -26,7 +26,7 @@ llm = OpenAI(
 )
 
 # Get repository information
-repo_url = os.getenv("GITHUB_REPO_URL")
+repo_url = os.getenv("REPO_URL")
 repo_name = repo_url.split('/')[-1].replace('.git', '')
 username = repo_url.split('/')[-2]
 full_repo_name = f"{username}/{repo_name}"

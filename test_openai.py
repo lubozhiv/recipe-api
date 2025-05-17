@@ -2,12 +2,13 @@ import os
 from openai import OpenAI
 
 client = OpenAI(
+    model=os.getenv("OPENAI_MODEL"),
     api_key=os.getenv("OPENAI_API_KEY"),
-    base_url=os.getenv("OPENAI_BASE_URL")
+    api_base=os.getenv("OPENAI_BASE_URL"),
 )
 
 response = client.chat.completions.create(
-    model="gpt-4o-mini",
+
     messages=[
         {"role": "system", "content": "You are a helpful assistant."},
         {"role": "user", "content": "What is the capital of France?"}

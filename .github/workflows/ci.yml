@@ -45,9 +45,7 @@ jobs:
       - name: Run pytest with coverage
         continue-on-error: true
         run: |
-          poetry run coverage run -m pytest --junit-xml=pytest.xml
-          poetry run coverage xml -o coverage.xml
-
+          poetry run pytest --cov=. --cov-report=xml:coverage.xml --junit-xml=pytest.xml
 
 
       - name: Publish coverage results

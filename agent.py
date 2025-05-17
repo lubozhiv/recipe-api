@@ -20,9 +20,9 @@ git = Github(GITHUB_TOKEN) if GITHUB_TOKEN else None
 
 # Initialize LLM
 llm = OpenAI(
-    model=os.getenv("OPENAI_MODEL", "gpt-4"),
+    model=os.getenv("OPENAI_MODEL"),
     api_key=os.getenv("OPENAI_API_KEY"),
-    api_base=os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1"),
+    api_base=os.getenv("OPENAI_BASE_URL"),
 )
 
 # Get repository information

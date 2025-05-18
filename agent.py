@@ -292,6 +292,7 @@ async def post_review_to_github(pr_number: int, body: str) -> Dict:
     debug_print("post_review_to_github", f"Posting review to PR #{pr_number}")
 
     if not git or not repo:
+        debug_print(f"git {git}. repo {repo}")
         error_msg = "GitHub client not initialized"
         debug_print("Error", error_msg)
         return {"error": error_msg}

@@ -10,42 +10,98 @@ import asyncio
 from llama_index.core.prompts import RichPromptTemplate
 from llama_index.core.agent.workflow import AgentOutput, ToolCall, ToolCallResult
 
+
+def debug_print(title, content):
+    """Helper function for consistent debug output"""
+    print(f"\n=== DEBUG: {title} ===")
+    print(content)
+    print("=" * (len(title) + 12) + "\n")
+
+
+# Debug environment setup
+debug_print("Environment Setup", "Loading environment variables and initializing components")
+
 # Load environment variables
 dotenv.load_dotenv()
 
+# Debug environment variables
+env_vars_to_check = [
+    "GITHUB_TOKEN",
+    "OPENAI_MODEL",
+    "OPENAI_API_KEY",
+    "OPENAI_BASE_URL",
+    "REPOSITORY",
+    "PR_NUMBER"
+]
+
+debug_print("Environment Variables", {var: os.getenv(var) for var in env_vars_to_check})
+
 # Initialize GitHub client
-GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
-git = Github(GITHUB_TOKEN) if GITHUB_TOKEN else None
+try:
+    GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
+    debug_print("GitHub Token", "Present" if GITHUB_TOKEN else "Missing")
+
+    git = Github(GITHUB_TOKEN) if GITHUB_TOKEN else None
+    if git:
+        debug_print("GitHub Client", "Initialized successfully")
+        # Test GitHub connection
+        try:
+            user = git.get_user()
+            debug_print("GitHub Connection Test", f"Connected as: {user.login}")
+        except Exception as e:
+            debug_print("GitHub Connection Error", str(e))
+    else:
+        debug_print("GitHub Client", "Not initialized - missing token")
+except Exception as e:
+    debug_print("GitHub Initialization Error", str(e))
+    git = None
 
 # Initialize LLM
-llm = OpenAI(
-    model=os.getenv("OPENAI_MODEL"),
-    api_key=os.getenv("OPENAI_API_KEY"),
-    api_base=os.getenv("OPENAI_BASE_URL"),
-)
+try:
+    llm = OpenAI(
+        model=os.getenv("OPENAI_MODEL"),
+        api_key=os.getenv("OPENAI_API_KEY"),
+        api_base=os.getenv("OPENAI_BASE_URL"),
+    )
+    debug_print("LLM Initialization", "Success")
+    debug_print("LLM Config", {
+        "model": os.getenv("OPENAI_MODEL"),
+        "api_base": os.getenv("OPENAI_BASE_URL"),
+        "api_key": "Present" if os.getenv("OPENAI_API_KEY") else "Missing"
+    })
+except Exception as e:
+    debug_print("LLM Initialization Error", str(e))
+    llm = None
 
 # Get repository information
-# repo_url = os.getenv("REPO_URL")
-# repo_name = repo_url.split('/')[-1].replace('.git', '')
-# username = repo_url.split('/')[-2]
-# full_repo_name = f"{username}/{repo_name}"
-
 full_repo_name = os.getenv("REPOSITORY")  # Format: "username/repo-name"
+debug_print("Repository Info", f"Full repo name: {full_repo_name}")
 
 if git is not None:
     try:
         repo = git.get_repo(full_repo_name)
-    except Exception:
+        debug_print("Repository Access", f"Successfully accessed: {repo.full_name}")
+    except Exception as e:
+        debug_print("Repository Access Error", str(e))
         repo = None
 else:
     repo = None
+    debug_print("Repository Access", "Skipped - GitHub client not initialized")
+
 
 # State management tools
 async def add_context_to_state(ctx: Context, context: str) -> Dict:
-    state = await ctx.get("state")
-    state["gathered_contexts"] = context
-    await ctx.set("state", state)
-    return {"success": True, "message": "Context added to state"}
+    debug_print("add_context_to_state", f"Adding context: {context[:100]}...")
+    try:
+        state = await ctx.get("state")
+        state["gathered_contexts"] = context
+        await ctx.set("state", state)
+        debug_print("State Update", "Context added successfully")
+        return {"success": True, "message": "Context added to state"}
+    except Exception as e:
+        debug_print("State Update Error", str(e))
+        return {"success": False, "error": str(e)}
+
 
 add_context_to_state_tool = FunctionTool.from_defaults(
     fn=add_context_to_state,
@@ -53,11 +109,19 @@ add_context_to_state_tool = FunctionTool.from_defaults(
     description="Adds the gathered context to the workflow state."
 )
 
+
 async def add_comment_to_state(ctx: Context, draft_comment: str) -> Dict:
-    state = await ctx.get("state")
-    state["draft_comment"] = draft_comment
-    await ctx.set("state", state)
-    return {"success": True, "message": "Draft comment added to state"}
+    debug_print("add_comment_to_state", f"Adding draft comment: {draft_comment[:100]}...")
+    try:
+        state = await ctx.get("state")
+        state["draft_comment"] = draft_comment
+        await ctx.set("state", state)
+        debug_print("State Update", "Draft comment added successfully")
+        return {"success": True, "message": "Draft comment added to state"}
+    except Exception as e:
+        debug_print("State Update Error", str(e))
+        return {"success": False, "error": str(e)}
+
 
 add_comment_to_state_tool = FunctionTool.from_defaults(
     fn=add_comment_to_state,
@@ -65,10 +129,15 @@ add_comment_to_state_tool = FunctionTool.from_defaults(
     description="Adds the draft PR comment to the workflow state."
 )
 
-# GitHub interaction tools
+
+# GitHub interaction tools with enhanced debugging
 async def get_pr_details(pr_number: int) -> Dict:
+    debug_print("get_pr_details", f"Fetching details for PR #{pr_number}")
+
     if not git or not repo:
-        return {"error": "GitHub client not initialized"}
+        error_msg = "GitHub client not initialized"
+        debug_print("Error", error_msg)
+        return {"error": error_msg}
 
     try:
         pull_request = repo.get_pull(pr_number)
@@ -86,10 +155,19 @@ async def get_pr_details(pr_number: int) -> Dict:
             "base_ref": pull_request.base.ref,
             "head_ref": pull_request.head.ref,
         }
-        print(f"Output from tool: {{'title': '{result['title']}', 'body': '{result['body']}'}}")
+
+        debug_print("PR Details Result", {
+            "title": result['title'],
+            "author": result['author'],
+            "body_length": len(result['body']),
+            "num_commits": len(result['commit_SHAs'])
+        })
+
         return result
     except Exception as e:
+        debug_print("PR Details Error", str(e))
         return {"error": str(e)}
+
 
 pr_details_tool = FunctionTool.from_defaults(
     fn=get_pr_details,
@@ -97,9 +175,14 @@ pr_details_tool = FunctionTool.from_defaults(
     description="Fetches details about a pull request."
 )
 
+
 async def get_file_contents(file_path: str) -> Dict:
+    debug_print("get_file_contents", f"Fetching contents for file: {file_path}")
+
     if not git or not repo:
-        return {"error": "GitHub client not initialized"}
+        error_msg = "GitHub client not initialized"
+        debug_print("Error", error_msg)
+        return {"error": error_msg}
 
     try:
         file_content = repo.get_contents(file_path)
@@ -109,10 +192,18 @@ async def get_file_contents(file_path: str) -> Dict:
             "sha": file_content.sha,
             "size": file_content.size,
         }
-        print(f"File contents retrieved: {result}")
+
+        debug_print("File Contents Result", {
+            "path": result['path'],
+            "size": result['size'],
+            "content_sample": result['content'][:100] + "..." if result['content'] else "Empty"
+        })
+
         return result
     except Exception as e:
+        debug_print("File Contents Error", str(e))
         return {"error": str(e)}
+
 
 file_contents_tool = FunctionTool.from_defaults(
     fn=get_file_contents,
@@ -120,9 +211,14 @@ file_contents_tool = FunctionTool.from_defaults(
     description="Fetches the contents of a file from the repository."
 )
 
+
 async def get_commit_details(commit_sha: str) -> Dict:
+    debug_print("get_commit_details", f"Fetching details for commit: {commit_sha}")
+
     if not git or not repo:
-        return {"error": "GitHub client not initialized"}
+        error_msg = "GitHub client not initialized"
+        debug_print("Error", error_msg)
+        return {"error": error_msg}
 
     try:
         commit = repo.get_commit(commit_sha)
@@ -137,7 +233,6 @@ async def get_commit_details(commit_sha: str) -> Dict:
                 "patch": f.patch if hasattr(f, 'patch') else None,
             }
             changed_files.append(changed_file)
-            print(f"Output from tool: [{{'filename': '{f.filename}'}}]")
 
         result = {
             "sha": commit.sha,
@@ -145,9 +240,19 @@ async def get_commit_details(commit_sha: str) -> Dict:
             "message": commit.commit.message,
             "changed_files": changed_files,
         }
+
+        debug_print("Commit Details Result", {
+            "sha": result['sha'],
+            "author": result['author'],
+            "message": result['message'],
+            "num_changed_files": len(result['changed_files'])
+        })
+
         return result
     except Exception as e:
+        debug_print("Commit Details Error", str(e))
         return {"error": str(e)}
+
 
 commit_details_tool = FunctionTool.from_defaults(
     fn=get_commit_details,
@@ -155,11 +260,19 @@ commit_details_tool = FunctionTool.from_defaults(
     description="Fetches details about a commit including changed files."
 )
 
+
 async def add_final_review_to_state(ctx: Context, final_review: str) -> Dict:
-    state = await ctx.get("state")
-    state["final_review_comment"] = final_review
-    await ctx.set("state", state)
-    return {"success": True, "message": "Final review added to state"}
+    debug_print("add_final_review_to_state", f"Adding final review: {final_review[:100]}...")
+    try:
+        state = await ctx.get("state")
+        state["final_review_comment"] = final_review
+        await ctx.set("state", state)
+        debug_print("State Update", "Final review added successfully")
+        return {"success": True, "message": "Final review added to state"}
+    except Exception as e:
+        debug_print("State Update Error", str(e))
+        return {"success": False, "error": str(e)}
+
 
 add_final_review_to_state_tool = FunctionTool.from_defaults(
     fn=add_final_review_to_state,
@@ -167,13 +280,28 @@ add_final_review_to_state_tool = FunctionTool.from_defaults(
     description="Adds the final approved review comment to the workflow state."
 )
 
+
 async def post_review_to_github(pr_number: int, body: str) -> Dict:
+    debug_print("post_review_to_github", f"Posting review to PR #{pr_number}")
+
     if not git or not repo:
-        return {"error": "GitHub client not initialized"}
+        error_msg = "GitHub client not initialized"
+        debug_print("Error", error_msg)
+        return {"error": error_msg}
 
     try:
         pull_request = repo.get_pull(pr_number)
+        debug_print("Review Content", f"Body length: {len(body)} characters")
+        debug_print("Review Preview", body[:200] + "..." if len(body) > 200 else body)
+
         review = pull_request.create_review(body=body)
+
+        debug_print("Review Posted", {
+            "success": True,
+            "review_id": review.id,
+            "html_url": review.html_url
+        })
+
         return {
             "success": True,
             "message": "Review posted successfully",
@@ -181,7 +309,9 @@ async def post_review_to_github(pr_number: int, body: str) -> Dict:
             "html_url": review.html_url
         }
     except Exception as e:
+        debug_print("Post Review Error", str(e))
         return {"error": str(e)}
+
 
 post_review_tool = FunctionTool.from_defaults(
     fn=post_review_to_github,
@@ -189,7 +319,7 @@ post_review_tool = FunctionTool.from_defaults(
     description="Posts a review comment to the specified GitHub pull request."
 )
 
-# Agents
+# Agents with debug info
 context_agent_system_prompt = """You are the context gathering agent. Your responsibilities:
 1. Gather PR details (author, title, body, diff_url, state, head_sha)
 2. Collect changed files information
@@ -252,23 +382,27 @@ workflow_agent = AgentWorkflow(
     },
 )
 
+
 async def main():
-    print("\nGitHub PR Review Agent Workflow")
-    print("-------------------------------")
+    debug_print("Workflow Start", "Initializing PR review workflow")
 
     # Get PR number from environment variable
     pr_number = os.getenv("PR_NUMBER")
+    debug_print("PR Number", pr_number if pr_number else "PR_NUMBER not set")
+
     if not pr_number:
-        print("Error: PR_NUMBER environment variable not set")
+        debug_print("Error", "PR_NUMBER environment variable not set")
         return
 
-    print(f"Reviewing PR #{pr_number}...\n")
+    debug_print("Workflow Parameters", {
+        "repository": full_repo_name,
+        "pr_number": pr_number,
+        "llm_initialized": llm is not None,
+        "github_initialized": git is not None
+    })
 
     ctx = Context(workflow_agent)
-
     query = f"Write a review for PR #{pr_number}"
-
-    print("\nStarting workflow...\n")
 
     # Extract PR number
     import re
@@ -279,9 +413,13 @@ async def main():
             try:
                 pull_request = repo.get_pull(pr_number)
                 pr_body = pull_request.body if pull_request.body else ""
-                print(f"Output from tool: {{'title': '{pull_request.title}', 'body': '{pr_body}'}}")
+                debug_print("Direct PR Fetch", {
+                    "title": pull_request.title,
+                    "body_length": len(pr_body),
+                    "state": pull_request.state
+                })
             except Exception as e:
-                print(f"Error fetching PR directly: {e}")
+                debug_print("Direct PR Fetch Error", str(e))
 
     prompt = RichPromptTemplate(f"Write a review for PR #{pr_number}")
     handler = workflow_agent.run(prompt.format(), ctx=ctx)
@@ -290,37 +428,59 @@ async def main():
     async for event in handler.stream_events():
         if hasattr(event, "current_agent_name") and event.current_agent_name != current_agent:
             current_agent = event.current_agent_name
-            print(f"\nCurrent agent: {current_agent}")
+            debug_print("Agent Change", f"New active agent: {current_agent}")
+
             # Explicit handoff logging
-            print(f"Output from tool: Agent {current_agent} is now handling the request due to the following reason: {'Initial request' if current_agent == 'ReviewAndPostingAgent' else 'Requested information'}")
+            debug_print("Handoff Reason",
+                        "Initial request" if current_agent == "ReviewAndPostingAgent"
+                        else "Requested information")
 
         elif isinstance(event, AgentOutput):
             if event.response and event.response.content:
-                print(f"\nFinal response: {event.response.content}")
+                debug_print("Agent Output", event.response.content)
             if event.tool_calls:
-                print(f"Selected tools: {[call.tool_name for call in event.tool_calls]}")
+                debug_print("Tool Selection", {
+                    "tools": [call.tool_name for call in event.tool_calls],
+                    "args": [call.tool_kwargs for call in event.tool_calls]
+                })
                 for call in event.tool_calls:
-                    print(f"Calling selected tool: {call.tool_name}, with arguments: {call.tool_kwargs}")
                     if call.tool_name == "handoff":
-                        print(f"Output from tool: Agent {call.tool_kwargs.get('to_agent')} is now handling the request due to the following reason: {call.tool_kwargs.get('reason', 'Workflow progression')}")
+                        debug_print("Agent Handoff", {
+                            "to_agent": call.tool_kwargs.get('to_agent'),
+                            "reason": call.tool_kwargs.get('reason', 'Workflow progression')
+                        })
 
         elif isinstance(event, ToolCallResult):
-            print(f"Output from tool: {event.tool_output}")
-            if isinstance(event.tool_output, dict) and 'title' in event.tool_output:
-                print(f"Output from tool: {{'title': '{event.tool_output['title']}', 'body': '{event.tool_output.get('body', '')}'}}")
+            debug_print("Tool Result", {
+                "tool_name": event.tool_name,
+                "output": event.tool_output if isinstance(event.tool_output, str)
+                else str(event.tool_output)[:200] + "..."
+                if len(str(event.tool_output)) > 200 else str(event.tool_output)
+            })
 
         elif isinstance(event, ToolCall):
-            print(f"Calling selected tool: {event.tool_name}, with arguments: {event.tool_kwargs}")
+            debug_print("Tool Call", {
+                "tool_name": event.tool_name,
+                "arguments": event.tool_kwargs
+            })
 
     state = await ctx.get("state")
-    print("\nCurrent workflow state:", state)
-    print("\nWorkflow completed.")
+    debug_print("Final State", state)
+    debug_print("Workflow Completion", "Workflow finished")
+
 
 if __name__ == "__main__":
     try:
+        debug_print("Application Start", "Starting async main function")
         asyncio.run(main())
     except Exception as e:
-        print(f"Application failed: {str(e)}")
+        debug_print("Application Error", f"Critical failure: {str(e)}")
+        # Print full traceback for critical errors
+        import traceback
+
+        debug_print("Stack Trace", traceback.format_exc())
     finally:
         if git:
             git.close()
+            debug_print("GitHub Client", "Closed connection")
+        debug_print("Application End", "Process completed")

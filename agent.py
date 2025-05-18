@@ -46,7 +46,7 @@ try:
     git = Github(GITHUB_TOKEN) if GITHUB_TOKEN else None
     if git:
         debug_print("GitHub Client", "Initialized successfully")
-        debug_print(f"GitHub token {GITHUB_TOKEN}")
+        # debug_print(f"GitHub token {GITHUB_TOKEN}")
         # Test GitHub connection
         # try:
         #     user = git.get_user()
@@ -56,7 +56,7 @@ try:
     else:
         debug_print("GitHub Client", "Not initialized - missing token")
 except Exception as e:
-    debug_print("GitHub Initialization Error", str(e))
+    debug_print("GitHub Initialization Error", content=str(e))
     git = None
 
 # Initialize LLM

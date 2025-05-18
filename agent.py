@@ -35,7 +35,7 @@ env_vars_to_check = [
 ]
 
 debug_print("Environment Variables", {var: os.getenv(var) for var in env_vars_to_check})
-
+git = None
 # Initialize GitHub client
 try:
     GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")

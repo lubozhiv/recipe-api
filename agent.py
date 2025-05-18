@@ -36,6 +36,8 @@ env_vars_to_check = [
 
 debug_print("Environment Variables", {var: os.getenv(var) for var in env_vars_to_check})
 git = None
+repo = None
+
 # Initialize GitHub client
 try:
     GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
@@ -98,6 +100,7 @@ else:
 
 # State management tools
 async def add_context_to_state(ctx: Context, context: str) -> Dict:
+    global git, repo
     debug_print("add_context_to_state", f"Adding context: {context[:100]}...")
     try:
         state = await ctx.get("state")
@@ -118,6 +121,7 @@ add_context_to_state_tool = FunctionTool.from_defaults(
 
 
 async def add_comment_to_state(ctx: Context, draft_comment: str) -> Dict:
+    global git, repo
     debug_print("add_comment_to_state", f"Adding draft comment: {draft_comment[:100]}...")
     try:
         state = await ctx.get("state")
@@ -139,6 +143,7 @@ add_comment_to_state_tool = FunctionTool.from_defaults(
 
 # GitHub interaction tools with enhanced debugging
 async def get_pr_details(pr_number: int) -> Dict:
+    global git, repo
     debug_print("get_pr_details", f"Fetching details for PR #{pr_number}")
 
     if not git or not repo:
@@ -184,6 +189,7 @@ pr_details_tool = FunctionTool.from_defaults(
 
 
 async def get_file_contents(file_path: str) -> Dict:
+    global git, repo
     debug_print("get_file_contents", f"Fetching contents for file: {file_path}")
 
     if not git or not repo:
@@ -220,6 +226,8 @@ file_contents_tool = FunctionTool.from_defaults(
 
 
 async def get_commit_details(commit_sha: str) -> Dict:
+    global git, repo
+
     debug_print("get_commit_details", f"Fetching details for commit: {commit_sha}")
 
     if not git or not repo:

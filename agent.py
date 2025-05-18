@@ -58,7 +58,7 @@ except Exception as e:
 
 # Initialize LLM
 model = os.getenv("OPENAI_MODEL") or "gpt-4o-mini"
-api_key = os.getenv("OPENAI_API_KEY") or "sk-vetvThlLdl7Zvs4sEd-e2Q"
+api_key = os.getenv("OPENAI_API_KEY")
 api_base = os.getenv("OPENAI_BASE_URL") or "https://litellm.aks-hs-prod.int.hyperskill.org"
 
 try:

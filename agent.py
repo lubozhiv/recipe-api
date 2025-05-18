@@ -44,6 +44,7 @@ try:
     git = Github(GITHUB_TOKEN) if GITHUB_TOKEN else None
     if git:
         debug_print("GitHub Client", "Initialized successfully")
+        debug_print(GITHUB_TOKEN)
         # Test GitHub connection
         try:
             user = git.get_user()

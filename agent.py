@@ -37,25 +37,25 @@ env_vars_to_check = [
 debug_print("Environment Variables", {var: os.getenv(var) for var in env_vars_to_check})
 
 # Initialize GitHub client
-# try:
-#     GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
-#     debug_print("GitHub Token", "Present" if GITHUB_TOKEN else "Missing")
-#
-#     git = Github(GITHUB_TOKEN) if GITHUB_TOKEN else None
-#     if git:
-#         debug_print("GitHub Client", "Initialized successfully")
-#         debug_print(f"GitHub token {GITHUB_TOKEN}")
-#         # Test GitHub connection
-#         try:
-#             user = git.get_user()
-#             debug_print("GitHub Connection Test", f"Connected as: {user.login}")
-#         except Exception as e:
-#             debug_print("GitHub Connection Error", str(e))
-#     else:
-#         debug_print("GitHub Client", "Not initialized - missing token")
-# except Exception as e:
-#     debug_print("GitHub Initialization Error", str(e))
-#     git = None
+try:
+    GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
+    debug_print("GitHub Token", "Present" if GITHUB_TOKEN else "Missing")
+
+    git = Github(GITHUB_TOKEN) if GITHUB_TOKEN else None
+    if git:
+        debug_print("GitHub Client", "Initialized successfully")
+        debug_print(f"GitHub token {GITHUB_TOKEN}")
+        # Test GitHub connection
+        # try:
+        #     user = git.get_user()
+        #     debug_print("GitHub Connection Test", f"Connected as: {user.login}")
+        # except Exception as e:
+        #     debug_print("GitHub Connection Error", str(e))
+    else:
+        debug_print("GitHub Client", "Not initialized - missing token")
+except Exception as e:
+    debug_print("GitHub Initialization Error", str(e))
+    git = None
 
 # Initialize LLM
 model = os.getenv("OPENAI_MODEL") or "gpt-4o-mini"

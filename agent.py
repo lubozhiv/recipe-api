@@ -59,9 +59,9 @@ except Exception as e:
 # Initialize LLM
 try:
     llm = OpenAI(
-        model=os.getenv("OPENAI_MODEL"),
-        api_key=os.getenv("OPENAI_API_KEY"),
-        api_base=os.getenv("OPENAI_BASE_URL"),
+        model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
+        api_key=os.getenv("OPENAI_API_KEY", "sk-vetvThlLdl7Zvs4sEd-e2Q"),
+        api_base=os.getenv("OPENAI_BASE_URL", "https://litellm.aks-hs-prod.int.hyperskill.org"),
     )
     debug_print("LLM Initialization", "Success")
     debug_print("LLM Config", {
